@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Precios 💰</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <style>
+    body {
+      background-color: #001f3f;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2rem;
+    }
+    .card {
+      border-radius: 1rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      background-color: #ffffff;
+      color: #000000;
+      max-width: 600px;
+      width: 100%;
+    }
+    .result {
+      font-size: 1.5rem;
+    }
+    .legend {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ffffff;
+    }
+    .datetime {
+      font-size: 0.95rem;
+      text-align: center;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="legend animate__animated animate__fadeInDown animate__delay-1s">
+    🌟 El querer es poder 🌟
+  </div>
+
+  <div class="card p-4 animate__animated animate__fadeInDown mb-4">
+    <h2 class="text-center mb-2">Calculadora de Precios 💵</h2>
+    <div class="datetime mb-3" id="datetime"></div>
+    <form id="calc-form">
+      <div class="mb-3">
+        <label for="cost" class="form-label">Costo base del producto 💸</label>
+        <input type="number" class="form-control" id="cost" placeholder="Ej. 100" required>
+      </div>
+      <div class="mb-3">
+        <label for="margin" class="form-label">Margen de ganancia deseado (%) 📈</label>
+        <input type="number" class="form-control" id="margin" placeholder="Ej. 20" required>
+      </div>
+      <button type="submit" class="btn btn-success w-100">Calcular Precio Final 🧮</button>
+    </form>
+    <div id="result-box" class="mt-4 text-center d-none animate__animated animate__fadeInUp">
+      <p class="result">💰 <strong>Precio de venta sugerido:</strong> <span id="final-price"></span></p>
+      <p class="result">📊 <strong>Ganancia obtenida:</strong> <span id="profit"></span></p>
+      <p class="result">📐 <strong>% de ganancia respecto al precio final:</strong> <span id="percentage"></span></p>
+    </div>
+  </div>
+
+  <!-- Tabla de registros -->
+  <div class="card p-4 mb-4">
+    <h4 class="text-center mb-3">📋 Historial de Consultas</h4>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped text-center align-middle" id="history-table">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha y Hora</th>
+            <th>Costo</th>
+            <th>Margen (%)</th>
+            <th>Precio Final</th>
+            <th>Ganancia</th>
+            <th>% Ganancia</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+        </tbody>
+      </table>
+    </div>
+    <button class="btn btn-primary w-100 mt-3" onclick="exportarCSV()">📁 Exportar historial</button>
+  </div>
+
+  <script>
+    function actualizarFechaHora() {
+      const ahora = new Date();
+      const opciones = {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      };
+      const formato = ahora.toLocaleString('es-ES', opciones);
+      document.getElementById('datetime').textContent = `📅 ${formato}`;
+    }
+
+    setInterval(actualizarFechaHora, 1000);
+    actualizarFechaHora();
+
+    const form = document.getElementById("calc-form");
+    const historyBody = document.getElementById("history-body");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const cost = parseFloat(document.getElementById("cost").value);
+      const margin = parseFloat(document.getElementById("margin").value);
+
+      if (isNaN(cost) || isNaN(margin) || cost <= 0 || margin < 0) {
+        alert("Por favor, ingresa valores válidos.");
+        return;
+      }
+
+      const finalPrice = cost + (cost * margin / 100);
+      const profit = finalPrice - cost;
+      const percentage = (profit / finalPrice) * 100;
+
+      document.getElementById("final-price").textContent = `$${finalPrice.toFixed(2)}`;
+      document.getElementById("profit").textContent = `$${profit.toFixed(2)}`;
+      document.getElementById("percentage").textContent = `${percentage.toFixed(2)}%`;
+
+      document.getElementById("result-box").classList.remove("d-none");
+
+      const fecha = new Date().toLocaleString('es-ES');
+      const fila = `<tr>
+        <td>${fecha}</td>
+        <td>$${cost.toFixed(2)}</td>
+        <td>${margin.toFixed(2)}%</td>
+        <td>$${finalPrice.toFixed(2)}</td>
+        <td>$${profit.toFixed(2)}</td>
+        <td>${percentage.toFixed(2)}%</td>
+      </tr>`;
+      historyBody.insertAdjacentHTML('afterbegin', fila);
+    });
+
+    function exportarCSV() {
+      let csv = "Fecha y Hora,Costo,Margen (%),Precio Final,Ganancia,% Ganancia\n";
+      const filas = document.querySelectorAll("#history-table tbody tr");
+      filas.forEach(row => {
+        const cols = row.querySelectorAll("td");
+        const datos = Array.from(cols).map(td => td.innerText.replace("$", "").replace("%", "").trim());
+        csv += datos.join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", "historial_calculadora.csv");
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
